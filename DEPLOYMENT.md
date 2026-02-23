@@ -1,36 +1,52 @@
 # Checklista Wdrożeniowa - Executive Cockpit
 
-## 1. Migracja do Produkcji (Supabase)
-- [ ] Utwórz projekt w Supabase.
-- [ ] Uruchom skrypt SQL z `server.ts` w SQL Editorze Supabase.
-- [ ] Skonfiguruj zmienne środowiskowe w `.env`:
+## 1. Konfiguracja środowiska
+- [ ] Skopiuj `.env.example` do `.env`.
+- [ ] Ustaw:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
-- [ ] Zamień wywołania `fetch('/api/...')` na `supabase.from('...').select()` w warstwie serwisu frontendowego.
-- [ ] Włącz Row Level Security (RLS) dla tabel:
-  - `alter table task_items enable row level security;`
-  - `create policy "Users can only see their own tasks" on task_items for select using (auth.uid() = user_id);`
+  - `APP_USER_ID`
+  - `APP_USER_LINKS_TABLE` (opcjonalnie, domyślnie `app_user_links`)
 
-## 2. Realtime
-- [ ] Zamień `setInterval` w `App.tsx` na subskrypcję Supabase:
-  ```typescript
-  supabase
-    .channel('public:task_items')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'task_items' }, payload => {
-      fetchData(); // lub aktualizacja granularna
-    })
-    .subscribe()
-  ```
+## 2. Schemat bazy (minimum)
+- [ ] Upewnij się, że istnieją tabele:
+  - `task_items`
+  - `habit_definitions`
+  - `habit_completions`
+  - `daily_reviews`
+- [ ] (Zalecane) uruchom `sql/001_executive_dashboard_extensions.sql`.
+- [ ] Uruchom root migracje: `../sql/005_events_life_events.sql`, `../sql/006_task_extensions_review_updates.sql`.
+- [ ] Opcjonalnie: `projects`, `outcomes`, `bot_knowledge`.
+- [ ] Uzupełnij mapowanie userów auth -> app user:
+  - tabela: `app_user_links(auth_uid, app_user_id)`
 
-## 3. Bezpieczeństwo
-- [ ] Upewnij się, że RLS jest włączone dla WSZYSTKICH tabel.
-- [ ] Wyłącz publiczny dostęp do tabel (tylko autoryzowani userzy).
-- [ ] Skonfiguruj Auth Providers (Google/GitHub) w Supabase.
+## 3. Realtime
+- [x] Frontend subskrybuje Realtime dla:
+  - `task_items`
+  - `habit_completions`
+  - `daily_reviews`
+- [x] Fallback polling 60s jest aktywny.
 
-## 4. Optymalizacja
-- [ ] Dodaj indeksy na kolumnach często filtrowanych (`user_id`, `status`, `due_date`).
-- [ ] Wdróż Edge Functions dla agregacji KPI jeśli zapytania staną się wolne.
+## 4. Bezpieczeństwo
+- [ ] Włącz RLS na wszystkich tabelach produkcyjnych.
+- [ ] Ogranicz dostęp do `service_role` tylko po stronie backendu.
+- [ ] Dodaj polityki po `user_id`.
+- [ ] Produkcyjnie wymagaj `Authorization: Bearer <jwt>` dla endpointów `/api/*`.
 
-## 5. Backup
-- [ ] Skonfiguruj Point-in-Time Recovery (PITR) w Supabase (dla planu Pro).
-- [ ] Regularny eksport JSON z `bot_knowledge`.
+## 5. Uruchomienie
+- Dev: `npm run dev`
+- Build: `npm run build`
+- Preview/Start: `npm run preview`
+
+## 6. API snapshot
+- [ ] Używaj głównie `GET /api/dashboard` (jedno wywołanie, pełny snapshot).
+- [ ] Pozostałe endpointy traktuj jako pomocnicze dla mutacji i diagnostyki.
+
+## 7. Operacyjnie
+- [ ] Sprawdź `GET /api/health`.
+- [ ] Sprawdź `GET /api/dashboard`.
+- [ ] W razie przekroczeń limitów mutacji dostosuj:
+  - `MUTATION_WINDOW_MS`
+  - `MUTATION_LIMIT`

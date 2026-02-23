@@ -1,22 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, Bell, Search, User, Zap } from 'lucide-react';
+import { Menu, X, Bell, Search, Command, Eye, EyeOff, Zap } from 'lucide-react';
 import { NAV_ITEMS } from '../constants';
-import { NavItem } from '../types';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: string;
   onTabChange: (id: string) => void;
+  isFocusMode?: boolean;
+  onToggleFocusMode?: () => void;
+  onOpenCommandPalette?: () => void;
 }
 
-export default function Layout({ children, activeTab, onTabChange }: LayoutProps) {
+export default function Layout({
+  children,
+  activeTab,
+  onTabChange,
+  isFocusMode,
+  onToggleFocusMode,
+  onOpenCommandPalette,
+}: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => window.matchMedia('(min-width: 1024px)').matches);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsDesktop(media.matches);
+    onChange();
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
   }, []);
 
   const formattedDate = new Intl.DateTimeFormat('pl-PL', {
@@ -46,7 +64,7 @@ export default function Layout({ children, activeTab, onTabChange }: LayoutProps
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
         <AnimatePresence>
-          {(isSidebarOpen || window.innerWidth >= 1024) && (
+          {(isSidebarOpen || isDesktop) && (
             <motion.aside
               initial={{ x: -280 }}
               animate={{ x: 0 }}
@@ -78,7 +96,7 @@ export default function Layout({ children, activeTab, onTabChange }: LayoutProps
                       key={item.id}
                       onClick={() => {
                         onTabChange(item.id);
-                        if (window.innerWidth < 1024) setIsSidebarOpen(false);
+                        if (!isDesktop) setIsSidebarOpen(false);
                       }}
                       className={`
                         w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group
@@ -132,6 +150,24 @@ export default function Layout({ children, activeTab, onTabChange }: LayoutProps
             </div>
             
             <div className="flex items-center gap-4">
+              {onToggleFocusMode ? (
+                <button
+                  onClick={onToggleFocusMode}
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800"
+                >
+                  {isFocusMode ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  {isFocusMode ? 'Tryb pełny' : 'Focus'}
+                </button>
+              ) : null}
+              {onOpenCommandPalette ? (
+                <button
+                  onClick={onOpenCommandPalette}
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-700 px-3 py-2 text-xs text-zinc-300 hover:bg-zinc-800"
+                >
+                  <Command className="h-4 w-4" />
+                  Komendy
+                </button>
+              ) : null}
               <div className="relative group">
                 <Search className="w-5 h-5 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-emerald-500 transition-colors" />
                 <input 

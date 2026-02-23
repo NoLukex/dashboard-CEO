@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ActivityData } from '../../types';
 
 interface ActivityChartProps {

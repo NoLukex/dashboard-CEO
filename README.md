@@ -2,19 +2,52 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Executive Cockpit Dashboard
 
-This contains everything you need to run your app locally.
+Dashboard operacyjny (PL) dla workflow: Tasks + Habits + Weekly Review + Knowledge.
 
-View your app in AI Studio: https://ai.studio/apps/063a19c3-850f-448f-af9d-840a50069d55
+## Run locally
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
+1. Skopiuj env:
+   `cp .env.example .env`
+2. Uzupełnij klucze Supabase w `.env`.
+3. Zainstaluj zależności:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
+4. Uruchom aplikację:
    `npm run dev`
+
+Aplikacja działa na `http://localhost:3000` (frontend + API w jednym serwerze).
+
+## Stack
+
+- React + Vite + Tailwind + Recharts
+- Express API
+- Supabase (Postgres + Realtime)
+
+## Najważniejsze funkcje
+
+- Decision-first cockpit: KPI + rekomendacje + konsola ryzyka
+- Focus Mode i Command Palette (`Ctrl/Cmd + K`)
+- Snapshot API (`/api/dashboard`) dla szybkiego ładowania
+- Realtime z Supabase + fallback polling
+- Heatmap nawyków (28 dni) i warstwa strategiczna (Projects/Outcomes)
+
+## Główne endpointy
+
+- `GET /api/dashboard`
+- `GET /api/overview`
+- `GET /api/ops`
+- `GET /api/tasks?scope=today|week|overdue`
+- `POST /api/tasks`
+- `PATCH /api/tasks/:id`
+- `GET /api/habits`
+- `POST /api/habits/:id/toggle`
+- `GET /api/strategy`
+- `GET /api/knowledge`
+- `GET /api/charts/activity`
+- `GET /api/charts/focus`
+
+## Schema alignment with bot
+
+- Uruchom migracje z root `sql/` (szczegolnie `005_events_life_events.sql` i `006_task_extensions_review_updates.sql`).
+- Dashboard wykorzystuje dane bota z tabel: `events`, `life_events`, `memory_chunks`, `reminders`, `system_logs`.
